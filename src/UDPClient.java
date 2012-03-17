@@ -13,7 +13,7 @@ public class UDPClient {
 		
 		// convert string "hello" to array of bytes, suitable for
 		// creation of DatagramPacket
-		Path path = Paths.get("G:/Dropbox/Works/Eclipse/CS2105/test.txt");		
+		Path path = Paths.get("test.txt");		
 		byte outBuf[] = Files.readAllBytes(path);
 
 		// Now create a packet (with destination addr and port)
