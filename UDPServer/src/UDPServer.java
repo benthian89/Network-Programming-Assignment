@@ -15,7 +15,7 @@ public class UDPServer {
 			DatagramPacket inPkt = new DatagramPacket(inBuf, inBuf.length);
 			s.receive(inPkt);
 			// convert content of packet into a string 
-			FileOutputStream myFile = new FileOutputStream("testrecieved.txt");	
+			FileOutputStream myFile = new FileOutputStream("Data/testrecieved.txt");	
 			
 			myFile.write(inPkt.getData(),inPkt.getOffset(),inPkt.getLength());				
 			myFile.close();
