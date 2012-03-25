@@ -52,6 +52,15 @@ public class UDPClient {
      				System.out.println("File is too large");
      				System.exit(0);
      			}
+     			
+     			/**************************************************************
+     			 * Our packets have a byte size of 65502
+     			 * 65500 for data only
+     			 * We use 2 extra bytes for 
+     			 * 1. Counter for packet number
+     			 * 2. Flag to indicate if the packet is the last packet or not 
+     			 *************************************************************/
+     			
      			// total number of packets to send
      			int total_packets = ((int)length / 65500) + 1;   					
      			// flag for indication of last packet
@@ -85,9 +94,10 @@ public class UDPClient {
      				DatagramPacket outPkt = new DatagramPacket(outBuf, outBuf.length,
      						addr, port);
      				s.send(outPkt);
-     				System.out.println(packet_number+"");
+//     				System.out.println(packet_number+"");
      				total_packets--;
      			}
+     			
      			// create a packet buffer to store data from packets received.
      			byte inBuf[] = new byte[1000];
      			DatagramPacket inPkt = new DatagramPacket(inBuf, inBuf.length);

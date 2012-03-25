@@ -39,6 +39,7 @@ public class UDPServer {
 		}
 		
 		myFile = new FileOutputStream("Data/"+filename);
+		int packet_number = 0;
 		
 		while (true)
 		{
@@ -47,7 +48,7 @@ public class UDPServer {
 			s.receive(inPkt);
 			// convert content of packet into a file
 			 			
-			int packet_number = 0;			
+						
 			temp = inPkt.getData();
 				
 			// check that packet is not the last packet
