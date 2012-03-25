@@ -62,7 +62,7 @@ public class UDPClient {
      			 *************************************************************/
      			
      			// total number of packets to send
-     			int total_packets = ((int)length / 65500) + 1;   					
+     			int packets_remaining = ((int)length / 65500) + 1;
      			// flag for indication of last packet
      			int last_packet = -1;    			
      			// 1 byte is used for the last packet flag
@@ -71,9 +71,8 @@ public class UDPClient {
      			int packet_number = 0;
      			boolean canSend = true;
      			ACKTimer t = new ACKTimer();
-     			
      	     			   			
-     			while ( total_packets > 0) {
+     			while ( packets_remaining > 0) {
      				if (canSend) {
 	     				byte[] outBuf = new byte[65502];
 	     				packet_number++;
@@ -81,7 +80,7 @@ public class UDPClient {
 	     				// 1 byte is used for keeping track of packet number
 	         			outBuf[65500] = (byte) packet_number;
 	         				// checks if the packet is the last packet
-	         				if (total_packets == 1) {
+	         				if (packets_remaining == 1) {
 	         				last_packet = 1;
 	         				last_packetByte = (byte) last_packet;
 	         				outBuf[65501] = last_packetByte;
@@ -103,8 +102,7 @@ public class UDPClient {
 	     				canSend = false;
 	     				previousPacket = outBuf;
 	     				
-	//     				System.out.println(packet_number+"");
-	     				total_packets--;
+	     				packets_remaining--;
      				}
      				
      				byte inACKbyte[] = new byte[1000];
