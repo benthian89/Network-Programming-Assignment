@@ -66,36 +66,62 @@ public class UDPClient {
      			// flag for indication of last packet
      			int last_packet = -1;    			
      			// 1 byte is used for the last packet flag
-     			byte last_packetByte;     			
+     			byte last_packetByte;
+     			byte[] previousPacket = new byte[65502];
      			int packet_number = 0;
+     			boolean canSend = true;
+     			ACKTimer t = new ACKTimer();
      			
      	     			   			
      			while ( total_packets > 0) {
-     				byte[] outBuf = new byte[65502];
-     				packet_number++;
-     				// packet numbering will start from 1
-     				// 1 byte is used for keeping track of packet number
-         			outBuf[65500] = (byte) packet_number;
-         				if (total_packets == 1) {
-         				last_packet = 1;
-         				last_packetByte = (byte) last_packet;
-         				outBuf[65501] = last_packetByte;
-         				}
-         				else {
-         					last_packet = 0;
-         					last_packetByte = (byte) last_packet;
-         					outBuf[65501] = last_packetByte;
-         					
-         				}
-     				fis.read(outBuf,0,(int)length%65500);
-    			
-     			// Now create a packet (with destination addr and port)
-     			// Sends over the actual file
-     				DatagramPacket outPkt = new DatagramPacket(outBuf, outBuf.length,
-     						addr, port);
-     				s.send(outPkt);
-//     				System.out.println(packet_number+"");
-     				total_packets--;
+     				if (canSend) {
+	     				byte[] outBuf = new byte[65502];
+	     				packet_number++;
+	     				// packet numbering will start from 1
+	     				// 1 byte is used for keeping track of packet number
+	         			outBuf[65500] = (byte) packet_number;
+	         				if (total_packets == 1) {
+	         				last_packet = 1;
+	         				last_packetByte = (byte) last_packet;
+	         				outBuf[65501] = last_packetByte;
+	         				}
+	         				else {
+	         					last_packet = 0;
+	         					last_packetByte = (byte) last_packet;
+	         					outBuf[65501] = last_packetByte;
+	         					
+	         				}
+	     				fis.read(outBuf,0,(int)length%65500);
+	    			
+	     			// Now create a packet (with destination addr and port)
+	     			// Sends over the actual file
+	     				DatagramPacket outPkt = new DatagramPacket(outBuf, outBuf.length,
+	     						addr, port);
+	     				s.send(outPkt);
+	     				t.setACKTimer(2); // 2 sec timeout
+	     				canSend = false;
+	     				previousPacket = outBuf;
+	     				
+	//     				System.out.println(packet_number+"");
+	     				total_packets--;
+     				}
+     				
+     				byte inBuf[] = new byte[1000];
+         			DatagramPacket inPkt = new DatagramPacket(inBuf, inBuf.length);
+         			s.receive(inPkt); // receive the ack from server.
+/*/
+     				if (true) { // ack received and ack number is the next packet to send
+     					t.StopTimer();
+     					canSend = true;
+     				}
+/**/
+     				if (t.isTimeOut()) {
+     					DatagramPacket outPkt = new DatagramPacket(previousPacket, previousPacket.length,
+	     						addr, port);
+	     				s.send(outPkt);
+	     				t.setACKTimer(2); // 2 sec timeout
+	     				canSend = false;
+     				}
      			}
      			
      			// create a packet buffer to store data from packets received.
