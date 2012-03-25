@@ -85,10 +85,20 @@ public class UDPServer {
 			}
 			// Last packet
 			else if ( (int) temp[65501] == 1) {
-				 											
-				 		myFile.write(temp);
-				 		myFile.close();
-				 					 		
+
+				
+				String ACK = Integer.toString(packet_number+1); 
+				byte[] outACKbyte = new byte[1000];
+				outACKbyte = ACK.getBytes();
+				DatagramPacket outACK = new DatagramPacket(
+						outACKbyte, outACKbyte.length, inPkt.getAddress(),
+						inPkt.getPort());
+							
+				s.send(outACK);
+						
+				myFile.write(temp);
+				myFile.close();
+/*				 					 		
 				 		// Create reply
 						String reply2 = "File received!";
 								
@@ -103,6 +113,7 @@ public class UDPServer {
 
 						// finally, send the packet
 						s.send(outPacket);
+*/
 				 						 		
 			}			
 						
