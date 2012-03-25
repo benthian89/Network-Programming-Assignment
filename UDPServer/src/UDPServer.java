@@ -11,7 +11,7 @@ public class UDPServer {
 		byte[] inBuf = new byte[65502];
 		byte[] infilenameByte = new byte[1000];
 		byte[] temp = new byte[65502];
-		FileOutputStream myFile;
+		FileOutputStream myFile = null;
 		String filename;
 		
 		DatagramPacket infilename = new DatagramPacket(infilenameByte, infilenameByte.length);
@@ -19,7 +19,7 @@ public class UDPServer {
 		
 		 filename = new String(infilename.getData());
 		if (!filename.equals(null)) {
-		
+			myFile = new FileOutputStream("Data/"+filename);
 			String reply = "Filename received!";
 			
 			byte[] outfilenameByte = new byte[1000];
@@ -38,28 +38,49 @@ public class UDPServer {
 			System.exit(0);
 		}
 		
-		myFile = new FileOutputStream("Data/"+filename);
+//		myFile = new FileOutputStream("Data/"+filename);
 		int packet_number = 0;
 		
 		while (true)
 		{
 			
 			DatagramPacket inPkt = new DatagramPacket(inBuf, inBuf.length);
-			s.receive(inPkt);
-			// convert content of packet into a file
-			 			
-						
+			s.receive(inPkt);			
+			 							
 			temp = inPkt.getData();
 				
 			// check that packet is not the last packet
 			if ((int)temp[65501] != 1) {
 				packet_number++;
+				
+				
+				
 				// check that the packet_number is in sequence
 				if ((int)temp[65500] == packet_number) {
 						myFile.write(temp);
+						
+						// Sends ACK of the next packet number if the packet received is in correct order
+						String ACK = Integer.toString(packet_number+1); 
+						byte[] outACKbyte = new byte[1000];
+						outACKbyte = ACK.getBytes();
+						DatagramPacket outACK = new DatagramPacket(
+								outACKbyte, outACKbyte.length, inPkt.getAddress(),
+								inPkt.getPort());
+									
+								s.send(outACK);
+						
 				}
 				else {
 					//send ack for the previous packet number
+					String ACK = Integer.toString(packet_number); 
+					byte[] outACKbyte = new byte[1000];
+					outACKbyte = ACK.getBytes();
+					DatagramPacket outACK = new DatagramPacket(
+							outACKbyte, outACKbyte.length, inPkt.getAddress(),
+							inPkt.getPort());
+								
+							s.send(outACK);					
+					
 				}				
 			}
 			// Last packet

@@ -80,6 +80,7 @@ public class UDPClient {
 	     				// packet numbering will start from 1
 	     				// 1 byte is used for keeping track of packet number
 	         			outBuf[65500] = (byte) packet_number;
+	         				// checks if the packet is the last packet
 	         				if (total_packets == 1) {
 	         				last_packet = 1;
 	         				last_packetByte = (byte) last_packet;
@@ -106,15 +107,18 @@ public class UDPClient {
 	     				total_packets--;
      				}
      				
-     				byte inBuf[] = new byte[1000];
-         			DatagramPacket inPkt = new DatagramPacket(inBuf, inBuf.length);
-         			s.receive(inPkt); // receive the ack from server.
-/*/
-     				if (true) { // ack received and ack number is the next packet to send
+     				byte inACKbyte[] = new byte[1000];
+         			DatagramPacket inACK = new DatagramPacket(inACKbyte, inACKbyte.length);
+         			s.receive(inACK); // receive the ack from server.
+         			
+					String ACK = new String(inACK.getData(), 0, inACK.getLength());
+ 					int integer_ACK = Integer.parseInt(ACK);
+ 					
+     				if (integer_ACK == packet_number+1) { // ack received and ack number is the next packet to send
      					t.StopTimer();
      					canSend = true;
      				}
-/**/
+
      				if (t.isTimeOut()) {
      					DatagramPacket outPkt = new DatagramPacket(previousPacket, previousPacket.length,
 	     						addr, port);
