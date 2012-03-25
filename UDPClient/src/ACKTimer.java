@@ -10,7 +10,9 @@ public class ACKTimer {
 		timeOut = false;
 	}
 	
-	public void setACKTimer(int sec) {
+	public ACKTimer(int sec) {
+		timer = new Timer();
+		timeOut = false;
 		timer.schedule(new ACKTask(), sec*1000); // sets a delay of "sec" seconds before changing the status of timeOut to true
 	}
 	

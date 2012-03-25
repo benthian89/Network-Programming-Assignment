@@ -99,7 +99,7 @@ public class UDPClient {
 	     				DatagramPacket outPkt = new DatagramPacket(outBuf, outBuf.length,
 	     						addr, port);
 	     				s.send(outPkt);
-	     				t.setACKTimer(2); // 2 sec timeout
+	     				t = new ACKTimer(2); // 2 sec timeout
 	     				canSend = false;
 	     				previousPacket = outBuf;
 	     				
@@ -123,7 +123,7 @@ public class UDPClient {
      					DatagramPacket outPkt = new DatagramPacket(previousPacket, previousPacket.length,
 	     						addr, port);
 	     				s.send(outPkt);
-	     				t.setACKTimer(2); // 2 sec timeout
+	     				t = new ACKTimer(2); // 2 sec timeout
 	     				canSend = false;
      				}
      			}
