@@ -81,10 +81,10 @@ public class UDPServer {
 								
 					s.send(outACK);
 														
-					int last_packet_length = ((((int)temp[2]) << 8) | (int)temp[3]);
+					int last_packet_length = (((((int)temp[2])&0xff) << 8) | (int)temp[3]&0xff);
 					
-					System.out.println("temp[2]: " + ((int)temp[2] << 8));
-					System.out.println("temp[3]: " + (int)temp[3]);
+					System.out.println("temp[2]: " + ((int)temp[2]&0xff));
+					System.out.println("temp[3]: " + ((int)temp[3]&0xff));
 					System.out.println("last packet len: " + last_packet_length);
 					
 					myFile.write(temp, 4, last_packet_length);
