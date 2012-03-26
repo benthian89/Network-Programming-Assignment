@@ -45,8 +45,10 @@ public class UDPClient {
      		String reply = new String(infilename.getData(), 0, infilename.getLength());
      		if (reply.equalsIgnoreCase("Filename received!")) {    			
      			System.out.println(reply);
+     			
      			//Convert the file into byteArray
      			FileInputStream fis =  new FileInputStream(myFile);
+     			
      			long length = myFile.length();
      			if (length > Integer.MAX_VALUE){
      				System.out.println("File is too large");
@@ -63,8 +65,10 @@ public class UDPClient {
      			
      			// total number of packets to send
      			int packets_remaining = ((int)length / 65500) + 1;
+     			
      			// flag for indication of last packet
      			int last_packet = -1;    			
+     			
      			// 1 byte is used for the last packet flag
      			byte last_packetByte;
      			byte[] previousPacket = new byte[65502];
@@ -76,22 +80,26 @@ public class UDPClient {
      				if (canSend) {
 	     				byte[] outBuf = new byte[65502];
 	     				packet_number++;
-	     				// packet numbering will start from 1
-	     				// 1 byte is used for keeping track of packet number
-	         			outBuf[65500] = (byte) packet_number;
+	     							
+	     				
+	     				/**** packet numbering will start from 1
+	     				 1 byte is used for keeping track of packet number ****/
+	     				
+	     				outBuf[0] = (byte) packet_number;
 	         				// checks if the packet is the last packet
 	         				if (packets_remaining == 1) {
 	         				last_packet = 1;
 	         				last_packetByte = (byte) last_packet;
-	         				outBuf[65501] = last_packetByte;
+	         				outBuf[1] = last_packetByte;
 	         				}
 	         				else {
 	         					last_packet = 0;
 	         					last_packetByte = (byte) last_packet;
-	         					outBuf[65501] = last_packetByte;
+	         					outBuf[1] = last_packetByte;
 	         					
 	         				}
-	     				fis.read(outBuf,0,(int)length%65500);
+	         				
+	         				fis.read(outBuf,2,(int)length%65500);
 	    			
 	     			// Now create a packet (with destination addr and port)
 	     			// Sends over the actual file
@@ -102,7 +110,7 @@ public class UDPClient {
 	     				canSend = false;
 	     				previousPacket = outBuf;
 	     				
-	     				packets_remaining--;
+//	     				packets_remaining--;
      				}
      				
      				byte inACKbyte[] = new byte[1000];
@@ -115,15 +123,17 @@ public class UDPClient {
      				if (integer_ACK == packet_number+1) { // ack received and ack number is the next packet to send
      					t.StopTimer();
      					canSend = true;
+     					packets_remaining--;
      				}
-
-     				if (t.isTimeOut()) {
+     					
+     				if (integer_ACK == packet_number || t.isTimeOut()) {
      					DatagramPacket outPkt = new DatagramPacket(previousPacket, previousPacket.length,
 	     						addr, port);
 	     				s.send(outPkt);
 	     				t = new ACKTimer(2); // 2 sec timeout
 	     				canSend = false;
      				}
+     				
      			}
      			
      			// create a packet buffer to store data from packets received.
@@ -135,7 +145,8 @@ public class UDPClient {
 
      			// convert reply to string and print to System.out
      			String reply2 = new String(inPkt.getData(), 0, inPkt.getLength());
-     			System.out.println(reply2);
+     			System.out.println(reply2); 
+     			    			
      		}
      		else {
      			System.out.println("No acknowledgement from server that filename is received");
