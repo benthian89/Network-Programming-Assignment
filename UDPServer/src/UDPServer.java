@@ -42,11 +42,11 @@ public class UDPServer {
 		
 		while (true)
 		{
-			byte[] inBuf = new byte[65502];
+			byte[] inBuf = new byte[65503];
 			DatagramPacket inPkt = new DatagramPacket(inBuf, inBuf.length);
 			s.receive(inPkt);			
 			
-			byte[] temp = new byte[65502];							
+			byte[] temp = new byte[65503];							
 			temp = inPkt.getData();
 				
 			// check that the packet_number is in sequence
@@ -55,7 +55,7 @@ public class UDPServer {
 				// check that packet is not the last packet
 				if ((int)temp[1] == 0) {
 															
-					myFile.write(temp,2, 65500);
+					myFile.write(temp,3, 65500);
 				
 					// Sends ACK of the next packet number if the packet received is in correct order
 					String ACK = Integer.toString(packet_number+1); 
@@ -80,15 +80,10 @@ public class UDPServer {
 							inPkt.getPort());
 								
 					s.send(outACK);
+														
+					int last_packet_length = (int) temp[2];			
 					
-					byte[] temp2 = new byte[65500];
-					int j=0;
-					for (int i=2;i<temp.length;i++) {
-						temp2[j] = temp[i];
-						j++;
-					}
-					
-					myFile.write(temp2);
+					myFile.write(temp, 3 , last_packet_length);
 					myFile.close();
 					
 					
@@ -124,28 +119,7 @@ public class UDPServer {
 						
 				s.send(outACK);					
 			
-			}				
-			
-			
-						
-			
-/*				 					 		
-				 		// Create reply
-						String reply2 = "File received!";
-								
-						byte[] outBuf = new byte[1000];
-						outBuf = reply2.getBytes();
-
-						// create reply packet using output buffer.
-						// Note: dest address/port is retrieved from inPkt
-						DatagramPacket outPacket = new DatagramPacket(
-							outBuf, outBuf.length, inPkt.getAddress(),
-							inPkt.getPort());
-
-						// finally, send the packet
-						s.send(outPacket);
-*/
-				 						 		
+			}								 						 		
 											
 		}
 			

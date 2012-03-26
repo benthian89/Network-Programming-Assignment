@@ -61,6 +61,7 @@ public class UDPClient {
      			 * We use 2 extra bytes for 
      			 * 1. Counter for packet number
      			 * 2. Flag to indicate if the packet is the last packet or not 
+     			 * 3. Packet length
      			 *************************************************************/
      			
      			// total number of packets to send
@@ -71,14 +72,14 @@ public class UDPClient {
      			
      			// 1 byte is used for the last packet flag
      			byte last_packetByte;
-     			byte[] previousPacket = new byte[65502];
+     			byte[] previousPacket = new byte[65503];
      			int packet_number = 0;
      			boolean canSend = true;
      			ACKTimer t = new ACKTimer();
      	     			   			
      			while ( packets_remaining > 0) {
      				if (canSend) {
-	     				byte[] outBuf = new byte[65502];
+	     				byte[] outBuf = new byte[65503];
 	     				packet_number++;
 	     							
 	     				
@@ -86,26 +87,32 @@ public class UDPClient {
 	     				 1 byte is used for keeping track of packet number ****/
 	     				
 	     				outBuf[0] = (byte) packet_number;
+	     				outBuf[2] = (byte) 0;
 	         				// checks if the packet is the last packet
-	         				if (packets_remaining == 1) {
-	         				last_packet = 1;
-	         				last_packetByte = (byte) last_packet;
-	         				outBuf[1] = last_packetByte;
+	         				if (packets_remaining == 1) {	         						         				         				
+	         					last_packet = 1;
+	         					last_packetByte = (byte) last_packet;
+	         					outBuf[1] = last_packetByte;
+	         					outBuf[2] = (byte) ((int)length%65500);
+	         				//	System.out.println("Last packet length: "+ (int) length%65500);	         					
+	         					fis.read(outBuf,3,(int)length%65500);
 	         				}
 	         				else {
 	         					last_packet = 0;
 	         					last_packetByte = (byte) last_packet;
 	         					outBuf[1] = last_packetByte;
-	         					
+	         					outBuf[2] = (byte) 65500;
+	         					fis.read(outBuf,3,65500);
 	         				}
 	         				
-	         				fis.read(outBuf,2,(int)length%65500);
-	    			
+//	         				fis.read(outBuf,3,(int)length%65500);	
+	         				
 	     			// Now create a packet (with destination addr and port)
 	     			// Sends over the actual file
 	     				DatagramPacket outPkt = new DatagramPacket(outBuf, outBuf.length,
 	     						addr, port);
 	     				s.send(outPkt);
+	     				
 	     				t = new ACKTimer(2); // 2 sec timeout
 	     				canSend = false;
 	     				previousPacket = outBuf;
@@ -123,7 +130,8 @@ public class UDPClient {
      				if (integer_ACK == packet_number+1) { // ack received and ack number is the next packet to send
      					t.StopTimer();
      					canSend = true;
-     					packets_remaining--;
+     					System.out.println(packets_remaining+"");     					
+     					packets_remaining--;    					
      				}
      					
      				if (integer_ACK == packet_number || t.isTimeOut()) {
