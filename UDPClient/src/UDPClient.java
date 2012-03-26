@@ -56,30 +56,36 @@ public class UDPClient {
      			}
      			
      			/**************************************************************
-     			 * Our packets have a byte size of 65502
+     			 * Our packets have a byte size of 65504
      			 * 65500 for data only
-     			 * We use 2 extra bytes for 
+     			 * The first 4 extra bytes for 
      			 * 1. Counter for packet number
      			 * 2. Flag to indicate if the packet is the last packet or not 
-     			 * 3. Packet length
+     			 * 3. Packet length (1)
+     			 * 4. Packet length (2)
      			 *************************************************************/
      			
      			// total number of packets to send
-     			int packets_remaining = ((int)length / 65500) + 1;
+     			int packets_remaining;
+     			if((int)length%65500 == 0) {
+     				packets_remaining = ((int)length / 65500);
+     			}
+     			else
+     				packets_remaining = ((int)length / 65500) + 1;
      			
      			// flag for indication of last packet
      			int last_packet = -1;    			
      			
      			// 1 byte is used for the last packet flag
      			byte last_packetByte;
-     			byte[] previousPacket = new byte[65503];
+     			byte[] previousPacket = new byte[65504];
      			int packet_number = 0;
      			boolean canSend = true;
      			ACKTimer t = new ACKTimer();
      	     			   			
      			while ( packets_remaining > 0) {
      				if (canSend) {
-	     				byte[] outBuf = new byte[65503];
+	     				byte[] outBuf = new byte[65504];
 	     				packet_number++;
 	     							
 	     				
@@ -93,16 +99,21 @@ public class UDPClient {
 	         					last_packet = 1;
 	         					last_packetByte = (byte) last_packet;
 	         					outBuf[1] = last_packetByte;
-	         					outBuf[2] = (byte) ((int)length%65500);
-	         				//	System.out.println("Last packet length: "+ (int) length%65500);	         					
-	         					fis.read(outBuf,3,(int)length%65500);
+	         					outBuf[2] = (byte) (((int)length%65500 & 65280) >> 8);
+	         					outBuf[3] = (byte) ((int)length%65500 & 255);
+	         					
+	         					System.out.println("Last packet length: " + (int) length%65500);
+	         					System.out.println("outBuf[2]: " + (int)outBuf[2]);
+	         					System.out.println("outBuf[3]: " + (int)outBuf[3]);
+	         					
+	         					fis.read(outBuf,4,(int)length%65500);
 	         				}
 	         				else {
 	         					last_packet = 0;
 	         					last_packetByte = (byte) last_packet;
 	         					outBuf[1] = last_packetByte;
 	         					outBuf[2] = (byte) 65500;
-	         					fis.read(outBuf,3,65500);
+	         					fis.read(outBuf,4,65500);
 	         				}
 	         				
 //	         				fis.read(outBuf,3,(int)length%65500);	

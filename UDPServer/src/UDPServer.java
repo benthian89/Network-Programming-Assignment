@@ -42,11 +42,11 @@ public class UDPServer {
 		
 		while (true)
 		{
-			byte[] inBuf = new byte[65503];
+			byte[] inBuf = new byte[65504];
 			DatagramPacket inPkt = new DatagramPacket(inBuf, inBuf.length);
 			s.receive(inPkt);			
 			
-			byte[] temp = new byte[65503];							
+			byte[] temp = new byte[65504];							
 			temp = inPkt.getData();
 				
 			// check that the packet_number is in sequence
@@ -55,7 +55,7 @@ public class UDPServer {
 				// check that packet is not the last packet
 				if ((int)temp[1] == 0) {
 															
-					myFile.write(temp,3, 65500);
+					myFile.write(temp, 4, 65500);
 				
 					// Sends ACK of the next packet number if the packet received is in correct order
 					String ACK = Integer.toString(packet_number+1); 
@@ -81,9 +81,13 @@ public class UDPServer {
 								
 					s.send(outACK);
 														
-					int last_packet_length = (int) temp[2];			
+					int last_packet_length = ((((int)temp[2]) << 8) | (int)temp[3]);
 					
-					myFile.write(temp, 3 , last_packet_length);
+					System.out.println("temp[2]: " + ((int)temp[2] << 8));
+					System.out.println("temp[3]: " + (int)temp[3]);
+					System.out.println("last packet len: " + last_packet_length);
+					
+					myFile.write(temp, 4, last_packet_length);
 					myFile.close();
 					
 					
