@@ -1,3 +1,8 @@
+//CS2105 Programming Assignment Part A
+//Group 36
+//A0072967N Koh Zhi Kai
+//A0073002B Thian Chang Yi Benjamin
+
 import java.util.Timer;
 import java.util.TimerTask;
 

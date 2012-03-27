@@ -1,4 +1,8 @@
-//
+//CS2105 Programming Assignment Part A
+//Group 36
+//A0072967N Koh Zhi Kai
+//A0073002B Thian Chang Yi Benjamin
+
 import java.net.*;
 import java.io.*;
 
@@ -8,23 +12,28 @@ public class UDPServer {
 	{
 		//use DatagramSocket for UDP connection
 		DatagramSocket s = new DatagramSocket(9001);		
-		byte[] infilenameByte = new byte[1000];
 		
+		
+		byte[] infilenameByte = new byte[1000];	
 		FileOutputStream myFile = null;
 		String filename;
+		int packet_number = 1;
 		
+		// Receives the filename from Client
 		DatagramPacket infilename = new DatagramPacket(infilenameByte, infilenameByte.length);
 		s.receive(infilename);
 		
 		 filename = new String(infilename.getData());
-		if (!filename.equals(null)) {
+		
+		 // If filename is not empty, we create a file with the filename and send back ACK that filename is received
+		 if (!filename.equals(null)) {
 			myFile = new FileOutputStream("Data/"+filename);
 			String reply = "Filename received!";
 			
 			byte[] outfilenameByte = new byte[1000];
 			outfilenameByte = reply.getBytes();
 
-			// create reply packet using outfilename buffer.
+			// Creates reply packet using outfilename buffer.
 			// Note: dest address/port is retrieved from infilename
 			DatagramPacket outfilename = new DatagramPacket(
 			outfilenameByte, outfilenameByte.length, infilename.getAddress(),
@@ -36,10 +45,8 @@ public class UDPServer {
 			System.out.println("filename not received");
 			System.exit(0);
 		}
-		
-//		myFile = new FileOutputStream("Data/"+filename);
-		int packet_number = 1;
-		
+				
+		// Server waits for the actual data to arrive
 		while (true)
 		{
 			byte[] inBuf = new byte[65504];
@@ -49,10 +56,10 @@ public class UDPServer {
 			byte[] temp = new byte[65504];							
 			temp = inPkt.getData();
 				
-			// check that the packet_number is in sequence
+			// Checks that the packet_number is in sequence
 			if ((int)temp[0] == packet_number) {
 				
-				// check that packet is not the last packet
+				// Checks that packet is not the last packet
 				if ((int)temp[1] == 0) {
 															
 					myFile.write(temp, 4, 65500);
@@ -69,7 +76,7 @@ public class UDPServer {
 					packet_number++;
 				
 				}
-				// if the packet is the last packet
+				// If the packet is the last packet, the last packet is written to file and the file is closed
 				else if ( (int) temp[1] == 1) {
 									
 					String ACK = Integer.toString(packet_number+1); 
@@ -82,38 +89,32 @@ public class UDPServer {
 					s.send(outACK);
 														
 					int last_packet_length = (((((int)temp[2])&0xff) << 8) | (int)temp[3]&0xff);
-					
-					System.out.println("temp[2]: " + ((int)temp[2]&0xff));
-					System.out.println("temp[3]: " + ((int)temp[3]&0xff));
-					System.out.println("last packet len: " + last_packet_length);
-					
+															
 					myFile.write(temp, 4, last_packet_length);
 					myFile.close();
 					
 					
-					// Create reply
+					// Creates reply to send to client, informing that the file is received
 					String reply2 = "File received!";
 							
 					byte[] outBuf = new byte[1000];
 					outBuf = reply2.getBytes();
 
-					// create reply packet using output buffer.
+					// Creates reply packet using output buffer.
 					// Note: dest address/port is retrieved from inPkt
 					DatagramPacket outPacket = new DatagramPacket(
 						outBuf, outBuf.length, inPkt.getAddress(),
 						inPkt.getPort());
 
-					// finally, send the packet
-					s.send(outPacket);
+					// Finally, send the packet
+					s.send(outPacket);			
 					
-					
-					
-				}
-				
+				}				
 			}
-			// if the packet_number is not in sequence, request for retransmission
+			
+			// If the packet_number is not in sequence, request for retransmission
 			else {
-				//send ack for the previous packet number
+				//Sends ACK for the previous packet number
 				String ACK = Integer.toString(packet_number); 
 				byte[] outACKbyte = new byte[1000];
 				outACKbyte = ACK.getBytes();

@@ -1,4 +1,8 @@
-//
+//CS2105 Programming Assignment Part A
+//Group 36
+//A0072967N Koh Zhi Kai
+//A0073002B Thian Chang Yi Benjamin
+
 import java.net.*;
 import java.io.*;
 import javax.swing.*;
@@ -18,7 +22,8 @@ public class UDPClient {
 	     	} catch (Exception e) {
 	     		System.out.println("Unable to load Windows look and feel");
 	     	}
-		//Lets the user choose the file
+		
+		 //Allows the user to choose the file using GUI
 		JFileChooser chooser = new JFileChooser(".");
         chooser.showOpenDialog(null);
         File myFile = chooser.getSelectedFile();
@@ -34,21 +39,22 @@ public class UDPClient {
         
         s.send(outFilename);
         
-     // create a packet buffer to store data from packets received.
-     		byte infilenameReply[] = new byte[1000];
-     		DatagramPacket infilename = new DatagramPacket(infilenameReply, infilenameReply.length);
+        //Creates a packet buffer to store data from packets received.
+     	byte infilenameReply[] = new byte[1000];
+     	DatagramPacket infilename = new DatagramPacket(infilenameReply, infilenameReply.length);
 
-     		// receive the reply from server.
-     		s.receive(infilename);
+     	//Receives the reply from server.
+     	s.receive(infilename);
 
-     		// convert reply to string and print to System.out
-     		String reply = new String(infilename.getData(), 0, infilename.getLength());
+     	//Converts reply to string and print to System.out
+     	String reply = new String(infilename.getData(), 0, infilename.getLength());
      		if (reply.equalsIgnoreCase("Filename received!")) {    			
      			System.out.println(reply);
      			
      			//Convert the file into byteArray
      			FileInputStream fis =  new FileInputStream(myFile);
      			
+     			//Checks if the file is too large. Cannot send more than 2GB due to the limit of Integer.
      			long length = myFile.length();
      			if (length > Integer.MAX_VALUE){
      				System.out.println("File is too large");
@@ -65,7 +71,7 @@ public class UDPClient {
      			 * 4. Packet length (2)
      			 *************************************************************/
      			
-     			// total number of packets to send
+     			// Total number of packets to send
      			int packets_remaining;
      			if((int)length%65500 == 0) {
      				packets_remaining = ((int)length / 65500);
@@ -73,7 +79,7 @@ public class UDPClient {
      			else
      				packets_remaining = ((int)length / 65500) + 1;
      			
-     			// flag for indication of last packet
+     			// Flag for indication of last packet
      			int last_packet = -1;    			
      			
      			// 1 byte is used for the last packet flag
@@ -82,30 +88,24 @@ public class UDPClient {
      			int packet_number = 0;
      			boolean canSend = true;
      			ACKTimer t = new ACKTimer();
+     			int timeout_counter = 0;
      	     			   			
      			while ( packets_remaining > 0) {
      				if (canSend) {
 	     				byte[] outBuf = new byte[65504];
 	     				packet_number++;
-	     							
-	     				
-	     				/**** packet numbering will start from 1
-	     				 1 byte is used for keeping track of packet number ****/
+	     								     				
+	     				/**** packet numbering will start from 1 ****/
 	     				
 	     				outBuf[0] = (byte) packet_number;
 	     				outBuf[2] = (byte) 0;
-	         				// checks if the packet is the last packet
+	         				// Checks if the packet is the last packet
 	         				if (packets_remaining == 1) {	         						         				         				
 	         					last_packet = 1;
 	         					last_packetByte = (byte) last_packet;
 	         					outBuf[1] = last_packetByte;
 	         					outBuf[2] = (byte) (((int)length%65500 & 65280) >> 8);
-	         					outBuf[3] = (byte) ((int)length%65500 & 255);
-	         					
-	         					System.out.println("Last packet length: " + (int) length%65500);
-	         					System.out.println("outBuf[2]: " + (int)outBuf[2]);
-	         					System.out.println("outBuf[3]: " + (int)outBuf[3]);
-	         					
+	         					outBuf[3] = (byte) ((int)length%65500 & 255);	         						         					         					
 	         					fis.read(outBuf,4,(int)length%65500);
 	         				}
 	         				else {
@@ -116,7 +116,6 @@ public class UDPClient {
 	         					fis.read(outBuf,4,65500);
 	         				}
 	         				
-//	         				fis.read(outBuf,3,(int)length%65500);	
 	         				
 	     			// Now create a packet (with destination addr and port)
 	     			// Sends over the actual file
@@ -128,34 +127,43 @@ public class UDPClient {
 	     				canSend = false;
 	     				previousPacket = outBuf;
 	     				
-//	     				packets_remaining--;
      				}
      				
+     				//Receives the ACK from server.
      				byte inACKbyte[] = new byte[1000];
          			DatagramPacket inACK = new DatagramPacket(inACKbyte, inACKbyte.length);
-         			s.receive(inACK); // receive the ack from server.
+         			s.receive(inACK); 
          			
 					String ACK = new String(inACK.getData(), 0, inACK.getLength());
  					int integer_ACK = Integer.parseInt(ACK);
  					
-     				if (integer_ACK == packet_number+1) { // ack received and ack number is the next packet to send
+ 					//ACK received and ACK number is the next packet to send
+ 					if (integer_ACK == packet_number+1) { 
      					t.StopTimer();
-     					canSend = true;
-     					System.out.println(packets_remaining+"");     					
-     					packets_remaining--;    					
+     					canSend = true;     					   					
+     					packets_remaining--;    
+     					timeout_counter = 0;
      				}
-     					
+     				
+ 					// If ACK is the previous packet number or time out occurs, retransmit the packet
      				if (integer_ACK == packet_number || t.isTimeOut()) {
      					DatagramPacket outPkt = new DatagramPacket(previousPacket, previousPacket.length,
 	     						addr, port);
 	     				s.send(outPkt);
 	     				t = new ACKTimer(2); // 2 sec timeout
 	     				canSend = false;
+	     				timeout_counter++;
+     				}
+     				
+     				// If time out occurs 3 times, the client will stop transmission.
+     				if (timeout_counter > 3 ) {
+     					System.out.println("Time out has occurred 3 times, transmission will terminate now");
+     					System.exit(0);
      				}
      				
      			}
      			
-     			// create a packet buffer to store data from packets received.
+     			// Creates a packet buffer to store final reply from server that the file is received
      			byte inBuf[] = new byte[1000];
      			DatagramPacket inPkt = new DatagramPacket(inBuf, inBuf.length);
 
