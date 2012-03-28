@@ -8,8 +8,7 @@ import java.io.*;
 
 public class UDPServer {
 
-	public static void main (String args[]) throws Exception
-	{
+	public static void main (String args[]) throws Exception {
 		//use DatagramSocket for UDP connection
 		DatagramSocket s = new DatagramSocket(9001);
 
@@ -46,8 +45,7 @@ public class UDPServer {
 		}
 
 		// Server waits for the actual data to arrive
-		while (true)
-		{
+		while (true) {
 			byte[] inBuf = new byte[65504];
 			DatagramPacket inPkt = new DatagramPacket(inBuf, inBuf.length);
 			s.receive(inPkt);
@@ -59,7 +57,7 @@ public class UDPServer {
 			if ((int)temp[0] == packet_number) {
 
 				// Checks that packet is not the last packet
-				if ((int)temp[1] == 0) {
+				if ((int)temp[1] != 1) {
 					myFile.write(temp, 4, 65500);
 
 					// Sends ACK of the next packet number if the packet received is in correct order
@@ -72,7 +70,7 @@ public class UDPServer {
 				}
 				
 				// If the packet is the last packet, the last packet is written to file and the file is closed
-				else if ( (int) temp[1] == 1) {
+				else {
 
 					String ACK = Integer.toString(packet_number+1);
 					byte[] outACKbyte = new byte[1000];
