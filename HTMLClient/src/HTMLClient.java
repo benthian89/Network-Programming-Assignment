@@ -1,22 +1,112 @@
-/*My Web Server 
- *Bhojan Anand
- */
 
 import java.util.*;
 import java.io.*;
 import java.net.*;
 
-public class HTMLClient {
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import java.awt.BorderLayout;
+import javax.swing.JTextField;
+import javax.swing.JLayeredPane;
+import javax.swing.JLabel;
+import java.awt.Font;
+import javax.swing.JButton;
+import javax.swing.JTextPane;
+import javax.swing.JTextArea;
+
+
+public class HTMLClient extends JFrame{
+	private static JTextArea Url;
+	private static JTextArea filePath;
+	
+	public HTMLClient() {
+		getContentPane().setLayout(null);
+		
+		
+		JLabel lblNewLabel = new JLabel("URL:");
+		lblNewLabel.setFont(new Font("Gill Sans MT", Font.BOLD, 14));
+		lblNewLabel.setBounds(10, 33, 41, 29);
+		getContentPane().add(lblNewLabel);
+		
+		JLabel lblFilePath = new JLabel("File Path:");
+		lblFilePath.setFont(new Font("Gill Sans MT", Font.BOLD, 14));
+		lblFilePath.setBounds(10, 95, 68, 29);
+		getContentPane().add(lblFilePath);
+		
+		JButton btnNewButton = new JButton("Get");
+		btnNewButton.setFont(new Font("Cooper Std Black", Font.PLAIN, 18));
+		btnNewButton.setBounds(241, 165, 102, 38);
+		getContentPane().add(btnNewButton);
+			
+		Url = new JTextArea();
+		Url.setWrapStyleWord(true);
+		Url.setLineWrap(true);
+		Url.setBounds(90, 36, 484, 22);
+		getContentPane().add(Url);		
+		
+		filePath = new JTextArea();
+		filePath.setBounds(90, 98, 484, 22);
+		getContentPane().add(filePath);
+	}
 	
     public static void main (String args[]) throws Exception 
 	{
 		// throws Exception here because don't want to deal
 		// with errors in the rest of the code for simplicity.
 		
-		// Create a new TCP WELCOME SOCKET that waits for connection at port
-		// number 7000.
-		ServerSocket serverSock = new ServerSocket(7000);
-		System.out.println("SERVER IS WAITING FOR HTTP REQUEST at PORT 7000...");
+		Socket s;
+		FileOutputStream myFile;
+		String websiteAddress;
+		String HTMLFile;
+		String localFile = filePath.getText();
+		
+		try {
+			websiteAddress = Url.getText();
+			
+			s = new Socket(websiteAddress,80);
+			
+			BufferedReader inFromServer = new BufferedReader (new InputStreamReader(s.getInputStream()));
+			
+			OutputStreamWriter outFromClient = new OutputStreamWriter(s.getOutputStream()); 
+			
+			outFromClient.write("GET " + websiteAddress + " HTTP/1.0\r\n");
+			outFromClient.flush();
+			
+			localFile = localFile.substring(localFile.lastIndexOf('/') +1);
+			
+			BufferedWriter writeToLocalFile = new BufferedWriter(new FileWriter(localFile));
+			
+			boolean flag = true;
+			String input;
+			
+			while (flag) {
+				input = inFromServer.readLine();
+				
+				if (input == null)
+					flag = false;
+				else {
+					writeToLocalFile.write(input);
+				}
+			}
+			
+			System.out.println("\nPage received successfully...\n" );
+			
+			writeToLocalFile.close();
+			//myFile = new FileOutputStream("Data/"+filename);
+			
+			s.close();
+		} catch (IOException e) {
+			System.out.println("Error getting page " + e);
+		}
+		
+		
+		
+		
+		
+		
+		
+		
+	/*	
 		
 		while (true) 
 		{
@@ -95,5 +185,6 @@ public class HTMLClient {
 			// Close connection (using HTTP 1.0 which is non-persistent).
 			s.close();
 		}
+		*/
 	}
 }
