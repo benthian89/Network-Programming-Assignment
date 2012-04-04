@@ -100,6 +100,7 @@ public class HTMLClient extends JFrame{
 	}
 	
 	public static void HTMLGrabber() {
+		
 		String userInputAddress = websiteAddress;
 		String host;
 		String serverPathAddress;
@@ -110,40 +111,36 @@ public class HTMLClient extends JFrame{
 		Socket s;
 		FileOutputStream myFile;
 		
-		
+		//Removes http:// if it starts with it
 		if (userInputAddress.startsWith("http://")) {
 			userInputAddress = userInputAddress.substring(7);
 		}
 		
 		int indexOfPath = userInputAddress.indexOf("/");
+		
 		serverPathAddress = userInputAddress.substring(indexOfPath);
+		
 		host = userInputAddress.substring(0,indexOfPath);
+		
+		//Gets the html file name to be used as the saved file name
 		int lastIndex = userInputAddress.lastIndexOf("/");
 		htmlFileName = userInputAddress.substring(lastIndex);
 		localFile = htmlFileName;
 		
+		//Set default file name to index.html
 		if (htmlFileName.length() == 0) {
 			htmlFileName = serverPathAddress;
 			localFile = "index.html";
 		}
 		
 		try {
-			
-			
+					
 			s = new Socket(host,80);
-			
-			
 			
 			BufferedReader inFromServer = new BufferedReader (new InputStreamReader(s.getInputStream()));
 			
-			PrintWriter out = new PrintWriter(s.getOutputStream());
-			out.println("GET " + serverPathAddress + " HTTP/1.0");
-			out.println("Host: " + host);
-			out.println();
-			
-			
-			
-			/*OutputStreamWriter outFromClient = new OutputStreamWriter(s.getOutputStream()); 
+			//Create a output stream writer to "talk" to the webserver
+			OutputStreamWriter outFromClient = new OutputStreamWriter(s.getOutputStream()); 
 			System.out.println("GET " + serverPathAddress + " HTTP/1.0 \n");
 			System.out.println("Host: "+ host);
 			System.out.println("");
@@ -152,9 +149,10 @@ public class HTMLClient extends JFrame{
 			outFromClient.write("Host: "+ host);
 			outFromClient.write("");
 			outFromClient.flush();
-			*/
+			
 			localFile = localFile.substring(localFile.lastIndexOf('/') +1);
 			
+			//creating a BufferWriter to create and write into the file locally	
 			BufferedWriter writeToLocalFile = new BufferedWriter(new FileWriter(localFile));
 			
 			boolean flag = true;
