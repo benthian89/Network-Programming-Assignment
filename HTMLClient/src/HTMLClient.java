@@ -9,6 +9,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.JLayeredPane;
 import javax.swing.JLabel;
@@ -91,12 +92,16 @@ public class HTMLClient extends JFrame{
 		JButton GetButton = new JButton("Get");
 		GetButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {			
-					HTMLGrabber();				
+					HTMLGrabber();	
+					JOptionPane.showMessageDialog(new JFrame(), "File received successfully!", "Grabbed", JOptionPane.PLAIN_MESSAGE );
 			}
 		});
 		GetButton.setFont(new Font("Cooper Std Black", Font.PLAIN, 18));
 		GetButton.setBounds(241, 165, 102, 38);
 		getContentPane().add(GetButton);
+		
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
 	}
 	
 	public static void HTMLGrabber() {
@@ -141,37 +146,44 @@ public class HTMLClient extends JFrame{
 			
 			//Create a output stream writer to "talk" to the webserver
 			OutputStreamWriter outFromClient = new OutputStreamWriter(s.getOutputStream()); 
-			System.out.println("GET " + serverPathAddress + " HTTP/1.0 \n");
+			System.out.println("GET " + serverPathAddress + " HTTP/1.0");
 			System.out.println("Host: "+ host);
 			System.out.println("");
 			
-			outFromClient.write("GET " + serverPathAddress + " HTTP/1.0 \n");
-			outFromClient.write("Host: "+ host);
-			outFromClient.write("");
+			
+			outFromClient.write("GET " + serverPathAddress + " HTTP/1.0 \r\n");
+			outFromClient.write("Host: "+ host + "\r\n");
+			outFromClient.write("\r\n");
 			outFromClient.flush();
 			
-			localFile = localFile.substring(localFile.lastIndexOf('/') +1);
+		//	localFile = localFile.substring(localFile.lastIndexOf('/') +1);
 			
 			//creating a BufferWriter to create and write into the file locally	
 			BufferedWriter writeToLocalFile = new BufferedWriter(new FileWriter(localFile));
 			
+			
 			boolean flag = true;
 			String input;
 			
-			while (flag) {
+			while (true) {
 				input = inFromServer.readLine();
 				
-				if (input == null)
-					flag = false;
-				else {
+				// Use parser to read the img tags
+				
+				
+				
+			/*	if (input == null)
+					flag = false; */
+//				else {
 					writeToLocalFile.write(input);
-				}
+	//			}
 			}
 			
-			System.out.println("\nPage received successfully...\n" );
 			
-			writeToLocalFile.close();
+			
+			//writeToLocalFile.close();
 			//myFile = new FileOutputStream("Data/"+filename);
+//			System.out.println("\nPage received successfully...\n" );
 			
 			s.close();
 		} catch (IOException e) {
