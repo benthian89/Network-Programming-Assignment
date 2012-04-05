@@ -7,6 +7,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.Toolkit;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -25,6 +26,11 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 
 public class HTMLClient extends JFrame{
@@ -93,6 +99,7 @@ public class HTMLClient extends JFrame{
 		GetButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {			
 					HTMLGrabber();	
+					
 					JOptionPane.showMessageDialog(new JFrame(), "File received successfully!", "Grabbed", JOptionPane.PLAIN_MESSAGE );
 			}
 		});
@@ -104,13 +111,12 @@ public class HTMLClient extends JFrame{
 		
 	}
 	
+	@SuppressWarnings("deprecation")
 	public static void HTMLGrabber() {
 		
 		String userInputAddress = websiteAddress;
 		String host;
-		String serverPathAddress;
-		String htmlFileName;
-		String localFile = null;
+		String serverPathAddress;	
 		String localFilePath = choosenFilePath.getPath();
 
 		Socket s;
@@ -120,51 +126,34 @@ public class HTMLClient extends JFrame{
 		if (userInputAddress.startsWith("http://")) {
 			userInputAddress = userInputAddress.substring(7);
 		}
-				
-		int indexOfPath = userInputAddress.indexOf("/");
 		
+		//if the website is http://www.free-extras.com/funny/images/392/silly+cat+chillin+in+a+cardboard+box.html
+		//This will remove the host and left with /funny/images/392/silly+cat+chillin+in+a+cardboard+box.html
+		int indexOfPath = userInputAddress.indexOf("/");		
 		serverPathAddress = userInputAddress.substring(indexOfPath);
 		
+		//host will be www.free-extras.com in the example above
 		host = userInputAddress.substring(0,indexOfPath);
 		
-		//Gets the html file name to be used as the saved file name
-		int lastIndex = userInputAddress.lastIndexOf("/");
-		htmlFileName = userInputAddress.substring(lastIndex);
-		localFile = htmlFileName;
-		
-		//Set default file name to index.html
-		if (htmlFileName.length() == 0) {
-			htmlFileName = serverPathAddress;
-			localFile = "index.html";
-		}
 		
 		try {
 					
 			s = new Socket(host,80);
-			
-			BufferedReader inFromServer = new BufferedReader (new InputStreamReader(s.getInputStream()));
-			
+		
 			//Create a output stream writer to "talk" to the webserver
 			OutputStreamWriter outFromClient = new OutputStreamWriter(s.getOutputStream()); 
-		/*	System.out.println("GET " + serverPathAddress + " HTTP/1.0");
-			System.out.println("Host: "+ host);
-			System.out.println("");*/
-			
 			
 			outFromClient.write("GET " + serverPathAddress + " HTTP/1.0 \r\n");
 			outFromClient.write("Host: "+ host + "\r\n");
 			outFromClient.write("\r\n");
 			outFromClient.flush();
 			
-		//	localFile = localFile.substring(localFile.lastIndexOf('/') +1);
-			
-			//creating a BufferWriter to create and write into the file locally	
-			BufferedWriter writeToLocalFile = new BufferedWriter(new FileWriter(localFile));
-			
-			
+			//Creates a buffer to read in the response from the web server
+			BufferedReader inFromServer = new BufferedReader (new InputStreamReader(s.getInputStream()));
 			boolean flag = true;
 			String input = null;
 			String response = null;
+			
 			while (flag) {
 				input = inFromServer.readLine();
 				response = response + input + "\n";
@@ -174,15 +163,84 @@ public class HTMLClient extends JFrame{
 
 			}
 			
+			//response will display the response from the web server, including header + body
+			response = response.substring(4);
 //			System.out.println(response);
-			int bodyIndex = response.indexOf("<html");
-			String body = response.substring(bodyIndex);
 		
-			System.out.println(body);
-			
 			// Use html parser to get the image tags and fire GET and store the image
+			Document doc = Jsoup.parse(response);
 			
+			//Finds all the img tags
+			Elements images = doc.select("img[src]");
+			int number_of_images = images.size();
+			Vector<String> imagesList =  new Vector<String>(number_of_images);
 		
+			//Loops through all the img tags and adds them to an array.
+			for (Element src : images) {			
+					imagesList.add(src.attr("abs:src"));										
+			}
+			
+			
+			// Here, we will send a request for every img file and store the image to disk
+			for (int i=0; i<number_of_images; i++) {
+				String imageLink = imagesList.get(i);
+				String hostName;
+				String imagePathAddress;				
+				String imageFileName;
+				byte[] buf = new byte[10485760]; //10mb for buffer
+				
+				Socket imageSocket;				
+				
+				//Removes http:// if it starts with it
+				if (imageLink.startsWith("http://")) {
+					imageLink = imageLink.substring(7);
+				}
+				
+				
+				int indexOfImagePath = imageLink.indexOf("/");				
+				imagePathAddress = imageLink.substring(indexOfPath);
+				
+				hostName = imageLink.substring(0,indexOfImagePath);
+				
+				//Gets the image file name to be used as the saved file name
+				int lastSlash = imageLink.lastIndexOf("/");
+				imageFileName = imageLink.substring(lastSlash+1);
+					
+				
+				try {
+					imageSocket = new Socket(hostName,80);
+					
+					DataInputStream responseFromServer = new DataInputStream ((imageSocket.getInputStream()));
+				//	BufferedReader responseFromServer = new BufferedReader (new InputStreamReader(imageSocket.getInputStream()));
+					
+					OutputStreamWriter requestForImages = new OutputStreamWriter(imageSocket.getOutputStream()); 
+					requestForImages.write("GET " + imagePathAddress + " HTTP/1.0 \r\n");
+					requestForImages.write("Host: "+ hostName + "\r\n");
+					requestForImages.write("\r\n");
+					requestForImages.flush();
+					
+					
+					//Stores the image to the folder chosen by the user
+					myFile = new FileOutputStream(localFilePath + "/" + imageFileName);
+					
+					
+					while (!responseFromServer.readLine().equals("")) {
+						//ignore the header
+					}
+					
+					int length=0;
+					//Reads in the data (in binary) and write to file
+					while ((length = responseFromServer.read(buf))>0 ) {
+						myFile.write(buf,0,length);
+					}
+					
+					
+					myFile.close();
+				} catch (IOException e) {
+					System.out.println("Error getting page " + e);
+				}
+			}
+			
 			s.close();
 		} catch (IOException e) {
 			System.out.println("Error getting page " + e);
@@ -199,89 +257,10 @@ public class HTMLClient extends JFrame{
 		myHTML.setSize(600, 330);
         myHTML.setMinimumSize(new Dimension(600, 330));
     	myHTML.setVisible(true);
-		
-		
-		
-		
-	/*	
-		
-		while (true) 
-		{
-			//Listen & Accept Connection and Create new CONNECTION SOCKET
-			Socket s = serverSock.accept();
-			System.out.println("connection established from " + s.getInetAddress());
-			System.out.println("COnnection Definition " + s.toString());
+    	Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+		int X = (screen.width / 2) - 400; // Center horizontally.
+		int Y = (screen.height / 2) - 300; // Center vertically.
+		myHTML.setBounds(X, Y, 600, 330);		
 
-			
-			// The next 3 lines create a buffer reader that
-			// reads from the socket s.
-			InputStream is = s.getInputStream();
-			InputStreamReader isr = new InputStreamReader(is);
-			BufferedReader br = new BufferedReader(isr);
-
-			// The next 2 lines create a output stream we can
-			// write to.
-			OutputStream os = s.getOutputStream();
-			DataOutputStream dos = new DataOutputStream(os);
-			
-			// Read HTTP request (empty line signal end of request)
-			String input = br.readLine();
-			String filename = "";
-			StringTokenizer st = new StringTokenizer(input);
-		
-			if (st.nextToken().equals("GET"))
-			{
-				// This is a GET request.  Parse filename.
-				filename = st.nextToken();
-				if (filename.startsWith("/")) 
-				{
-					filename = filename.substring(1);
-					
-			    }
-			    //filename = "root/" + filename; //my web folder
-			}
-			// read and throw away the rest of the HTTP request
-			while (input.compareTo("") != 0) 
-			{
-				input = br.readLine();  //Just read and ignore
-			}
-			
-			try{
-			
-			// Open and read the file into buffer
-			File f = new File(filename);
-		      
-			if (f.canRead())
-			{
-				int size = (int)f.length();
-				
-				//Create a File InputStrem to read the File
-				FileInputStream fis = new FileInputStream(filename);
-				byte[] buffer = new byte[size];
-				fis.read(buffer);
-			
-				// Now, write buffer to client
-				// (but, send HTTP response header first)
-				
-				dos.writeBytes("HTTP/1.0 200 Okie \r\n");
-				dos.writeBytes("Content-type: text/html\r\n");
-				dos.writeBytes("\r\n");
-				dos.write(buffer,  0, size);
-			}
-			else
-			{
-				// File cannot be read.  Reply with 404 error.
-				dos.writeBytes("HTTP/1.0 404 Not Found\r\n");
-				dos.writeBytes("\r\n");
-				dos.writeBytes("Cannot find " + filename + " leh");
-			}
-			}
-			catch (Exception ex){
-			}
-
-			// Close connection (using HTTP 1.0 which is non-persistent).
-			s.close();
-		}
-		*/
 	}
 }
