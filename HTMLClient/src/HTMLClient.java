@@ -120,7 +120,7 @@ public class HTMLClient extends JFrame{
 		if (userInputAddress.startsWith("http://")) {
 			userInputAddress = userInputAddress.substring(7);
 		}
-		
+				
 		int indexOfPath = userInputAddress.indexOf("/");
 		
 		serverPathAddress = userInputAddress.substring(indexOfPath);
@@ -146,9 +146,9 @@ public class HTMLClient extends JFrame{
 			
 			//Create a output stream writer to "talk" to the webserver
 			OutputStreamWriter outFromClient = new OutputStreamWriter(s.getOutputStream()); 
-			System.out.println("GET " + serverPathAddress + " HTTP/1.0");
+		/*	System.out.println("GET " + serverPathAddress + " HTTP/1.0");
 			System.out.println("Host: "+ host);
-			System.out.println("");
+			System.out.println("");*/
 			
 			
 			outFromClient.write("GET " + serverPathAddress + " HTTP/1.0 \r\n");
@@ -163,28 +163,26 @@ public class HTMLClient extends JFrame{
 			
 			
 			boolean flag = true;
-			String input;
-			
-			while (true) {
+			String input = null;
+			String response = null;
+			while (flag) {
 				input = inFromServer.readLine();
-				
-				// Use parser to read the img tags
-				
-				
-				
-			/*	if (input == null)
-					flag = false; */
-//				else {
-					writeToLocalFile.write(input);
-	//			}
+				response = response + input + "\n";
+						
+				if (input == null)
+					flag = false; 
+
 			}
 			
+//			System.out.println(response);
+			int bodyIndex = response.indexOf("<html");
+			String body = response.substring(bodyIndex);
+		
+			System.out.println(body);
 			
+			// Use html parser to get the image tags and fire GET and store the image
 			
-			//writeToLocalFile.close();
-			//myFile = new FileOutputStream("Data/"+filename);
-//			System.out.println("\nPage received successfully...\n" );
-			
+		
 			s.close();
 		} catch (IOException e) {
 			System.out.println("Error getting page " + e);
