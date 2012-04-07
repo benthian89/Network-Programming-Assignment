@@ -129,13 +129,21 @@ public class HTMLClient extends JFrame{
 		
 		//if the website is http://www.free-extras.com/funny/images/392/silly+cat+chillin+in+a+cardboard+box.html
 		//This will remove the host and left with /funny/images/392/silly+cat+chillin+in+a+cardboard+box.html
-		int indexOfPath = userInputAddress.indexOf("/");		
-		serverPathAddress = userInputAddress.substring(indexOfPath);
+		if (userInputAddress.contains("/")) {
+			int indexOfPath = userInputAddress.indexOf("/");		
+			serverPathAddress = userInputAddress.substring(indexOfPath);
 		
-		//host will be www.free-extras.com in the example above
-		host = userInputAddress.substring(0,indexOfPath);
+			//host will be www.free-extras.com in the example above
+			host = userInputAddress.substring(0,indexOfPath);
+		}
 		
-		
+		// if website is www.gsmarena.com
+		// serverPathAddress is at the root "/"
+		else {
+			serverPathAddress = "/";
+			host = userInputAddress;
+		}
+				
 		try {
 					
 			s = new Socket(host,80);
@@ -143,29 +151,24 @@ public class HTMLClient extends JFrame{
 			//Create a output stream writer to "talk" to the webserver
 			OutputStreamWriter outFromClient = new OutputStreamWriter(s.getOutputStream()); 
 			
-			outFromClient.write("GET " + serverPathAddress + " HTTP/1.0 \r\n");
+			outFromClient.write("GET " + serverPathAddress + " HTTP/1.0\r\n");
 			outFromClient.write("Host: "+ host + "\r\n");
 			outFromClient.write("\r\n");
 			outFromClient.flush();
 			
 			//Creates a buffer to read in the response from the web server
 			BufferedReader inFromServer = new BufferedReader (new InputStreamReader(s.getInputStream()));
-			boolean flag = true;
+			
 			String input = null;
 			String response = null;
 			
-			while (flag) {
-				input = inFromServer.readLine();
-				response = response + input + "\n";
-						
-				if (input == null)
-					flag = false; 
-
-			}
+			do { input = inFromServer.readLine(); 
+				response = response + input + "\n"; 
+			} 
+			while (input != null);
 			
 			//response will display the response from the web server, including header + body
 			response = response.substring(4);
-//			System.out.println(response);
 		
 			// Use html parser to get the image tags and fire GET and store the image
 			Document doc = Jsoup.parse(response);
@@ -185,9 +188,9 @@ public class HTMLClient extends JFrame{
 			for (int i=0; i<number_of_images; i++) {
 				String imageLink = imagesList.get(i);
 				String hostName;
-				String imagePathAddress;				
+				String imagePathAddress;		
 				String imageFileName;
-				byte[] buf = new byte[10485760]; //10mb for buffer
+				byte[] buf = new byte[10*1024*1024]; //10mb for buffer
 				
 				Socket imageSocket;				
 				
@@ -196,23 +199,22 @@ public class HTMLClient extends JFrame{
 					imageLink = imageLink.substring(7);
 				}
 				
+						
+					int indexOfImagePath = imageLink.indexOf("/");				
+					imagePathAddress = imageLink.substring(indexOfImagePath);
+					
+					hostName = imageLink.substring(0,indexOfImagePath);
 				
-				int indexOfImagePath = imageLink.indexOf("/");				
-				imagePathAddress = imageLink.substring(indexOfPath);
-				
-				hostName = imageLink.substring(0,indexOfImagePath);
-				
-				//Gets the image file name to be used as the saved file name
-				int lastSlash = imageLink.lastIndexOf("/");
-				imageFileName = imageLink.substring(lastSlash+1);
+					//Gets the image file name to be used as the saved file name
+					int lastSlash = imageLink.lastIndexOf("/");
+					imageFileName = imageLink.substring(lastSlash+1);
 					
 				
 				try {
 					imageSocket = new Socket(hostName,80);
 					
 					DataInputStream responseFromServer = new DataInputStream ((imageSocket.getInputStream()));
-				//	BufferedReader responseFromServer = new BufferedReader (new InputStreamReader(imageSocket.getInputStream()));
-					
+									
 					OutputStreamWriter requestForImages = new OutputStreamWriter(imageSocket.getOutputStream()); 
 					requestForImages.write("GET " + imagePathAddress + " HTTP/1.0 \r\n");
 					requestForImages.write("Host: "+ hostName + "\r\n");
@@ -233,8 +235,7 @@ public class HTMLClient extends JFrame{
 					while ((length = responseFromServer.read(buf))>0 ) {
 						myFile.write(buf,0,length);
 					}
-					
-					
+									
 					myFile.close();
 				} catch (IOException e) {
 					System.out.println("Error getting page " + e);
@@ -251,8 +252,7 @@ public class HTMLClient extends JFrame{
 	
     public static void main (String args[]) throws Exception 
 	{
-		// throws Exception here because don't want to deal
-		// with errors in the rest of the code for simplicity.
+		
 		HTMLClient myHTML = new HTMLClient();
 		myHTML.setSize(600, 330);
         myHTML.setMinimumSize(new Dimension(600, 330));
